@@ -1,0 +1,6 @@
+CREATE PROCEDURE ispisi_poruku (ispis NCHAR(150))
+RAISE EXCEPTION -746, 0, ispis;
+END PROCEDURE;
+
+CREATE TRIGGER update_igraci UPDATE OF sifMec, sifIgrac ON igraci
+BEFORE (EXECUTE PROCEDURE ispisi_poruku ('Nedozvoljeno azuriranje sifre meca i sifre igraca u relaciji igraci.'));

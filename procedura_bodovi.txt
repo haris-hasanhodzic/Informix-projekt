@@ -1,0 +1,108 @@
+CREATE PROCEDURE izr_bodove()
+DEFINE sIgrac,sif LIKE igrac.sifIgrac;
+DEFINE bodovi LIKE igrac.brojbodova;
+DEFINE tur LIKE izdanje.sifTurnir;
+DEFINE izd LIKE izdanje.sifIzdanje;
+DEFINE n,i,j SMALLINT; 
+DEFINE k CHAR(80);
+
+ON EXCEPTION SET i, j, k
+	ROLLBACK WORK;
+	IF i =-701 THEN
+		RAISE EXCEPTION -746, 0, k;
+	ELSE
+		RAISE EXCEPTION i, j, k;
+	END IF
+END EXCEPTION
+
+ON EXCEPTION IN (-107, -113, -134, -143, -144, -154)
+	RAISE EXCEPTION -701, 0, k;
+END EXCEPTION
+
+BEGIN WORK;
+SET ISOLATION TO REPEATABLE READ;
+SET LOCK MODE TO WAIT 5;
+
+LET k='Ne moze se postaviti READ LOCK na neku od relacija mec,izdanje,igraci,bodovi_kolo';
+
+SELECT igraci.sifIgrac, izdanje.sifTurnir, izdanje.sifIzdanje, MAX(bodoviKolo) bodovi FROM mec,izdanje,igraci,bodovi_kolo
+	WHERE   igraci.sifMec=mec.sifMec 
+                AND izdanje.sifTurnir=mec.sifTurnir 
+		AND izdanje.sifIzdanje=mec.sifIzdanje
+                AND mec.ozn_kolo=bodovi_kolo.ozn_kolo 
+		AND bodovi_kolo.sifTip=izdanje.sifTip 
+        	AND izdanje.datKraj<TODAY
+		AND izdanje.datKraj>MDY(MONTH(TODAY),DAY(TODAY),YEAR(TODAY)-1) 
+GROUP BY 1,2,3
+INTO TEMP trez;
+
+LET k='Ne moze se postaviti READ LOCK na neku od relacija igraci,set_statistika ';
+
+SELECT igraci.* FROM igraci,set_statistika, set_statistika set2
+WHERE   igraci.sifMec=set_statistika.sifMec 
+	AND igraci.sifIgrac=set_statistika.sifIgrac
+	AND igraci.sifMec=set2.sifMec 
+	AND igraci.sifIgrac<>set2.sifIgrac
+	AND set_statistika.brojSet=set2.brojSet
+	AND set_statistika.brojset=(SELECT MAX(brojset) FROM set_statistika set3 
+					WHERE   set3.sifMec=igraci.sifMec 
+						AND set3.sifIgrac=igraci.sifIgrac)
+	AND set_statistika.gameswon>set2.gameswon
+INTO TEMP pobjednik;
+
+LET k='Ne moze se postaviti READ LOCK na neku od relacija mec,bodovi_kolo,izdanje,pobjednik';
+
+SELECT pobjednik.sifIgrac,izdanje.sifTurnir, izdanje.sifIzdanje,bodoviKolo FROM mec,bodovi_kolo,izdanje,pobjednik
+	WHERE   mec.sifturnir=izdanje.sifTurnir 
+		AND mec.sifIzdanje=izdanje.sifIzdanje
+		AND izdanje.sifTip=bodovi_kolo.sifTip
+		AND mec.sifMec=pobjednik.sifMec
+		AND mec.ozn_kolo='F'
+		AND bodovi_kolo.ozn_kolo='WF' 
+		AND izdanje.datKraj<TODAY 
+		AND izdanje.datKraj>MDY(MONTH(TODAY),DAY(TODAY),YEAR(TODAY)-1) 
+INTO TEMP tpobjednik;
+
+SET LOCK MODE TO NOT WAIT;
+LET k = 'Privremena relacija trez: WRITE LOCK nije odobren';
+UPDATE trez SET bodovi=(SELECT bodoviKolo FROM tpobjednik 
+			WHERE   trez.sifIgrac=tpobjednik.sifIgrac 
+				AND trez.sifTurnir=tpobjednik.sifTurnir
+				AND trez.sifIzdanje=tpobjednik.sifIzdanje) 
+		WHERE EXISTS (SELECT * FROM tpobjednik 
+					WHERE trez.sifIgrac=tpobjednik.sifIgrac 
+					AND trez.sifTurnir=tpobjednik.sifTurnir
+					AND trez.sifIzdanje=tpobjednik.sifIzdanje);
+SET LOCK MODE TO WAIT 5; 
+SELECT * FROM trez ORDER BY bodovi DESC  INTO TEMP tt;
+
+SET LOCK MODE TO NOT WAIT;
+FOREACH kursor FOR 
+	SELECT igrac.sifIgrac  INTO sIgrac FROM igrac
+
+	ON EXCEPTION IN (-107, -113, -134, -143, -144, -154)
+	RAISE EXCEPTION -701, 0, k;
+	END EXCEPTION
+	
+	LET n=0;
+	LET bodovi=0;
+ 		 FOREACH kursor2 FOR SELECT sifIgrac,sifturnir,sifIzdanje INTO sif,tur,izd FROM tt WHERE sifIgrac=sIgrac
+			LET n=n+1;
+			SET LOCK MODE TO WAIT 5;
+			LET bodovi=bodovi+(SELECT tt.bodovi FROM tt WHERE sif=tt.sifIgrac AND tur=tt.sifturnir AND izd=tt.sifIzdanje);
+			SET LOCK MODE TO NOT WAIT;
+			IF n=18 THEN
+	  		EXIT FOREACH;
+			END IF;
+  		END FOREACH;
+	SET LOCK MODE TO NOT WAIT;
+	LET k = 'Relacija igrac: WRITE LOCK nije odobren';
+	UPDATE igrac SET brojBodova = bodovi WHERE CURRENT OF kursor;
+END FOREACH;
+
+DROP TABLE trez;
+DROP TABLE tpobjednik;
+DROP TABLE tt;
+DROP TABLE pobjednik;
+COMMIT WORK;
+END PROCEDURE;

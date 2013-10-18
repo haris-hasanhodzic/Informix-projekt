@@ -1,0 +1,67 @@
+CREATE PROCEDURE pros( )
+DEFINE i,j INTEGER;
+DEFINE k CHAR(100);
+DEFINE GLOBAL var INTEGER DEFAULT 0;
+
+ON EXCEPTION SET i, j, k
+	ROLLBACK WORK;
+	IF i =-701 THEN
+		RAISE EXCEPTION -746, 0, k;
+	ELSE
+		RAISE EXCEPTION i, j, k;
+	END IF
+END EXCEPTION
+
+ON EXCEPTION IN (-107, -113, -134, -143, -144, -154)
+	RAISE EXCEPTION -701, 0, k;
+END EXCEPTION
+
+BEGIN WORK;
+SET ISOLATION TO REPEATABLE READ;
+SET LOCK MODE TO WAIT 5;
+
+IF var>0 THEN
+DROP TABLE prosjek;
+DROP TABLE rez_mec;
+END IF
+
+LET var=var+1;
+
+LET k='Ne moze se postaviti READ LOCK na neku od relacija igraci ili set_statistika!';
+SELECT  igraci.*, set_statistika .brojSet, set_statistika .gamesWon FROM igraci,set_statistika
+	WHERE  igraci.sifMec=set_statistika.sifMec AND igraci.sifIgrac=set_statistika.sifIgrac
+	INTO TEMP t;  {ovdje imam sifMec, sifru igraca, broj seta i koliko je on gameova dobio u tom setu}
+
+LET k='NE moze se postaviti READ LOCK na privremenu relaciju t!';
+SELECT  t.sifMec,MAX(brojSet) setova FROM t
+	GROUP BY 1
+	ORDER BY 1
+	INTO TEMP tt; 
+
+LET k='NE moze se postaviti READ LOCK na privremenu relaciju tt!';
+SELECT  t.sifMec,t.sifIgrac AS pobjednik, COUNT(*) || ':' || MAX(t.brojSet)-COUNT(*) rezultat FROM t, t n
+	WHERE t.sifMec=n.sifMec AND t.sifIgrac<>n.sifIgrac AND t.brojSet=n.brojSet AND t.gameswon>n.gameswon
+	GROUP BY 1,2
+	HAVING MAX(t.brojSet)=(SELECT setova FROM tt WHERE t.sifMec=tt.sifMec)
+	ORDER BY 1,2 
+	INTO TEMP  rez_mec;
+
+LET k='Ne moze se postaviti READ LOCK na relaciju igrac, ili na privremenu relaciju rez_mec!';
+SELECT igrac.sifIgrac, COUNT(sifMec) AS WON 
+	FROM igrac, OUTER rez_mec 
+	WHERE igrac.sifIgrac = rez_mec.pobjednik
+	GROUP BY 1 
+	ORDER BY 1
+	INTO TEMP tpob; 
+
+LET k='Ne moze se postaviti READ LOCK na privremenu relaciju tpob, ili na relaciju igrac, ili na relaciju set_statistika!';
+SELECT igrac.sifIgrac,imeIgrac,prezIgrac,brojBodova,zarada, SUM(aces) ACES_NUM, AVG(aces) ACES_AVG,  AVG(doubleFaults) doubleFaults_AVG,  AVG(FstServiceIn) 	FirstServiceIn_AVG, AVG(FstServicePts) FirstServicePts_AVG, AVG(SndServicePts) SecondServicePts_AVG, AVG(netPtsWon) netPtsWon_AVG, AVG(breakPtsWon) breakPtsWon_AVG, AVG(winners) winners_AVG, AVG(unforcedErrors) unforcedErrors_AVG, MAX(fastestServe) fastestServe_AVG, AVG(FstServiceAverage)  FirstService_AVG, AVG(SndServiceAverage) SecondService_AVG, COUNT(DISTINCT set_statistika.sifMec) AS MATCH_PLAYED, WON AS MATCH_WON  FROM tpob, igrac, OUTER set_statistika
+	WHERE igrac.sifIgrac=set_statistika.sifIgrac AND igrac.sifIgrac=tpob.sifIgrac
+	GROUP BY 1,2,3,4,5,WON
+	ORDER BY 1
+	INTO TEMP prosjek;
+COMMIT WORK;
+DROP TABLE t;
+DROP TABLE tt;
+DROP TABLE tpob;
+END PROCEDURE; 

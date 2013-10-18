@@ -1,0 +1,14 @@
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\drzava.unl" DELIMITER "#" INSERT INTO drzava;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\grad.unl" DELIMITER "#" INSERT INTO grad;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\podloga.unl" DELIMITER "#" INSERT INTO podloga;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\kolo.unl" DELIMITER "#" INSERT INTO kolo;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\tip.unl" DELIMITER "#" INSERT INTO tip;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\bodovi_kolo.unl" DELIMITER "#" INSERT INTO bodovi_kolo;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\igrac.unl" DELIMITER "#" INSERT INTO igrac;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\teren.unl" DELIMITER "#" INSERT INTO teren;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\turnir.unl" DELIMITER "#" INSERT INTO turnir;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\izdanje.unl" DELIMITER "#" INSERT INTO izdanje;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\novac_kolo.unl" DELIMITER "#" INSERT INTO novac_kolo;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\mec.unl" DELIMITER "#" INSERT INTO mec;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\igraci.unl" DELIMITER "#" INSERT INTO igraci;
+LOAD FROM "C:\Users\Korisnik\Desktop\New folder (2)\datoteke\set_statistika.unl" DELIMITER "#" INSERT INTO set_statistika;

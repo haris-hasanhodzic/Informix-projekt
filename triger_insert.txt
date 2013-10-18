@@ -1,0 +1,104 @@
+
+
+CREATE PROCEDURE povecaj_zaradu (novi_sifMec LIKE igraci.sifMec, novi_sifIgrac LIKE igrac.sifIgrac)
+DEFINE novac,osvojeno LIKE igrac.zarada;
+DEFINE i,j  SMALLINT;
+DEFINE k CHAR(100);
+
+ON EXCEPTION SET i, j, k
+	
+		RAISE EXCEPTION i, j, k;
+	
+END EXCEPTION
+
+SELECT igraci.* FROM igraci,set_statistika, set_statistika set2
+WHERE   igraci.sifMec=set_statistika.sifMec 
+	AND igraci.sifIgrac=set_statistika.sifIgrac
+	AND igraci.sifMec=set2.sifMec 
+	AND igraci.sifIgrac<>set2.sifIgrac
+	AND set_statistika.brojSet=set2.brojSet
+	AND set_statistika.brojset=(SELECT MAX(brojset) FROM set_statistika set3 
+					WHERE   set3.sifMec=igraci.sifMec 
+						AND set3.sifIgrac=igraci.sifIgrac)
+	AND set_statistika.gameswon>set2.gameswon
+INTO TEMP pobjednik;
+
+SELECT MAX(novacKolo) INTO novac FROM novac_kolo,mec,igraci,mec m, pobjednik
+WHERE   mec.sifMec=novi_sifMec 
+	AND mec.sifTurnir=m.sifTurnir 
+	AND mec.sifIzdanje=m.sifIzdanje
+	AND igraci.sifMec=m.sifMec
+	AND m.sifMec<>novi_sifMec
+	AND igraci.sifIgrac=novi_sifIgrac
+	AND pobjednik.sifMec=m.sifMec
+	AND mec.sifTurnir=novac_kolo.sifTurnir 
+	AND mec.sifIzdanje=novac_kolo.sifIzdanje
+	AND (
+		(
+		m.ozn_kolo=novac_kolo.ozn_kolo AND 
+			(
+				(
+					pobjednik.sifIgrac=novi_sifIgrac 
+					AND m.ozn_kolo <> "F"
+				) 
+				OR pobjednik.sifIgrac<>novi_sifIgrac 
+			)
+		)OR
+		(
+		pobjednik.sifIgrac=novi_sifIgrac 
+		AND m.ozn_kolo = "F" 
+		AND novac_kolo.ozn_kolo="WF"
+		)
+	    );
+
+IF EXISTS (SELECT * FROM pobjednik WHERE pobjednik.sifMec=novi_sifMec) THEN
+
+	SELECT novacKolo INTO osvojeno FROM novac_kolo,mec, pobjednik
+		WHERE   mec.sifMec=novi_sifMec
+		AND pobjednik.sifMec=mec.sifMec
+		AND novac_kolo.sifturnir=mec.sifturnir
+		AND novac_kolo.sifIzdanje=mec.sifIzdanje
+AND(
+		(
+			mec.ozn_kolo="F"  
+			AND novi_sifIgrac=pobjednik.sifIgrac
+			AND novac_kolo.ozn_kolo="WF"
+		)OR
+		(
+			novac_kolo.ozn_kolo=mec.ozn_kolo
+			AND mec.ozn_kolo="F"  
+			AND(
+				novi_sifIgrac<>pobjednik.sifIgrac
+				OR pobjednik.sifIgrac IS NULL
+			)
+		)OR
+		(
+			novac_kolo.ozn_kolo=mec.ozn_kolo 
+			AND mec.ozn_kolo<>"F"
+		)	
+   
+);
+
+ELSE 
+
+	SELECT novacKolo INTO osvojeno FROM novac_kolo,mec
+		WHERE   mec.sifMec=novi_sifMec
+		AND novac_kolo.sifturnir=mec.sifturnir
+		AND novac_kolo.sifIzdanje=mec.sifIzdanje
+		AND novac_kolo.ozn_kolo=mec.ozn_kolo ;
+END IF;
+
+
+
+IF novac IS NULL THEN 
+	UPDATE igrac SET zarada=zarada+osvojeno WHERE igrac.sifIgrac=novi_sifIgrac;
+ELIF novac < osvojeno THEN
+	UPDATE igrac SET zarada=zarada-novac+osvojeno WHERE igrac.sifIgrac=novi_sifIgrac;
+END IF;
+
+DROP TABLE pobjednik;
+END PROCEDURE;
+
+CREATE TRIGGER up_novac INSERT ON igraci
+REFERENCING NEW as new FOR EACH ROW
+(EXECUTE PROCEDURE povecaj_zaradu(new.sifMec,new.sifIgrac));

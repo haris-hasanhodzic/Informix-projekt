@@ -1,0 +1,152 @@
+CREATE TABLE drzava(
+oznDrzava		 NCHAR(20) NOT NULL,
+nazivDrzava 		NCHAR(100) NOT NULL,
+PRIMARY KEY (oznDrzava))
+LOCK MODE ROW;
+
+CREATE TABLE grad (
+pbrGrad		 NCHAR(20)  NOT NULL,
+grad		 NCHAR(50)  NOT NULL,
+oznDrzava 	NCHAR(20) NOT NULL,
+PRIMARY KEY(pbrGrad, oznDrzava),
+FOREIGN KEY (oznDrzava) REFERENCES drzava (oznDrzava))
+LOCK MODE ROW;
+
+CREATE TABLE podloga(
+ozn_podloga	 	 NCHAR(2) NOT NULL,
+podloga 	       	NCHAR(20) NOT NULL,
+PRIMARY KEY (ozn_podloga))
+LOCK MODE ROW;
+
+CREATE TABLE kolo(
+ozn_kolo 	CHAR(5) NOT NULL,
+kolo 		CHAR(20) NOT NULL,
+PRIMARY KEY(ozn_kolo))
+LOCK MODE ROW;
+
+CREATE TABLE tip(
+sifTip			 INTEGER NOT NULL, 
+nazivTip 		NCHAR(30) NOT NULL, 
+brojBodovaUkupno	 INTEGER,
+PRIMARY KEY (sifTip))
+LOCK MODE ROW;
+
+CREATE TABLE bodovi_kolo(
+sifTip 		INTEGER NOT NULL, 
+ozn_kolo 	CHAR(5) NOT NULL, 
+bodoviKolo 	INTEGER NOT NULL,
+PRIMARY KEY (sifTip, ozn_kolo),
+FOREIGN KEY(sifTip) REFERENCES tip(sifTip) ON DELETE CASCADE,
+FOREIGN KEY(ozn_kolo) REFERENCES kolo(ozn_kolo))
+LOCK MODE ROW;
+
+CREATE TABLE igrac(
+sifIgrac		 INTEGER NOT NULL,
+imeIgrac 	NCHAR(50) NOT NULL,
+prezIgrac 	NCHAR(50) NOT NULL,
+datRod 		DATE,
+spol 		CHAR(1) NOT NULL CHECK (spol IN ("M","F")),
+visina 		INTEGER,
+tezina		 INTEGER,
+plays 		NCHAR(2) CHECK (plays IN ("RH", "LH")),
+turned_pro	 NCHAR(4),
+trener		 NCHAR(100),
+brojBodova	 INTEGER DEFAULT 0,
+zarada 		INTEGER DEFAULT 0,
+pbrGradRod 	NCHAR(20) DEFAULT NULL,
+oznDrzavaRod 	NCHAR(20) DEFAULT NULL,
+PRIMARY KEY (sifIgrac),
+FOREIGN KEY (pbrGradRod, oznDrzavaRod) REFERENCES grad(pbrGrad,oznDrzava))
+LOCK MODE ROW;
+
+CREATE TABLE teren(
+sifTeren 			INTEGER NOT NULL,
+nazivTeren 			NCHAR(50), 
+brojMjesta			INTEGER, 
+krov 				CHAR(1)  CHECK (krov IN ("Y", "N")), 
+Hawkeye				 CHAR(1)  CHECK  (Hawkeye IN ("Y", "N")),
+pbrGrad 			NCHAR(20) DEFAULT NULL, 
+oznDrzava  			NCHAR(20)  DEFAULT NULL, 
+PRIMARY KEY(sifTeren),
+FOREIGN KEY(pbrGrad,oznDrzava) REFERENCES grad(pbrGrad,oznDrzava))
+LOCK MODE ROW;
+
+
+CREATE TABLE turnir(
+sifTurnir	 INTEGER NOT NULL,
+Turnir 		NCHAR(50) NOT NULL,
+pbrGrad	 	NCHAR(20) DEFAULT NULL, 
+oznDrzava 	NCHAR(20) DEFAULT NULL, 
+PRIMARY KEY(sifTurnir),
+FOREIGN KEY(pbrGrad,oznDrzava) REFERENCES grad(pbrGrad, oznDrzava))
+LOCK MODE ROW;
+
+CREATE TABLE izdanje(
+sifTurnir	 INTEGER NOT NULL,
+sifIzdanje 	INTEGER NOT NULL,
+datPoc	 	 DATE NOT NULL,
+datKraj	  	DATE NOT NULL,
+sifTip 		INTEGER DEFAULT NULL,
+broj_ucesnika 	INTEGER,
+nagradniFond 	INTEGER, 
+ozn_podloga	 NCHAR(2) DEFAULT NULL, 
+PRIMARY KEY (sifTurnir, sifIzdanje),
+FOREIGN KEY (sifTurnir) REFERENCES turnir(sifTurnir) ON DELETE CASCADE,
+FOREIGN KEY(sifTip) REFERENCES tip(sifTip),
+FOREIGN KEY(ozn_podloga) REFERENCES podloga(ozn_podloga))
+LOCK MODE ROW;
+
+CREATE TABLE novac_kolo(
+sifTurnir	 INTEGER NOT NULL,
+sifIzdanje	INTEGER NOT NULL,
+ozn_kolo 	CHAR(5) NOT NULL,
+novacKolo 	INTEGER,
+PRIMARY KEY (sifTurnir, sifIzdanje, ozn_kolo),
+FOREIGN KEY(sifTurnir, sifIzdanje) REFERENCES izdanje(sifTurnir, sifIzdanje) ON DELETE CASCADE,
+FOREIGN KEY(ozn_kolo) REFERENCES kolo(ozn_kolo))
+LOCK MODE ROW;
+
+CREATE TABLE mec(
+sifMec 		INTEGER NOT NULL,
+datMec 		DATE NOT NULL, 
+vrijemeMec 	CHAR(5) DEFAULT  NULL CHECK (vrijemeMec MATCHES '[0-2][0-9]:[0-5][0-9]'),
+sifTurnir 	INTEGER DEFAULT NULL,
+sifIzdanje 	INTEGER DEFAULT NULL,
+ozn_kolo 	CHAR(5) DEFAULT NULL,
+sifTeren	 INTEGER DEFAULT NULL,
+trajanje 	INTEGER, 
+PRIMARY KEY (sifMec),
+FOREIGN KEY (sifTurnir,sifIzdanje) REFERENCES izdanje(sifTurnir,sifIzdanje),
+FOREIGN KEY (sifTeren) REFERENCES teren(sifTeren),
+FOREIGN KEY (ozn_kolo) REFERENCES kolo(ozn_kolo))
+LOCK MODE ROW;
+
+CREATE TABLE igraci(
+sifMec INTEGER NOT NULL,
+sifIgrac INTEGER NOT NULL,
+PRIMARY KEY (sifMec, sifIgrac),
+FOREIGN KEY (sifMec) REFERENCES mec(sifMec),
+FOREIGN KEY (sifIgrac) REFERENCES igrac(sifIgrac))
+LOCK MODE ROW;
+
+CREATE TABLE set_statistika(
+sifMec 			INTEGER NOT NULL,
+brojSet 		INTEGER NOT NULL,
+sifIgrac		INTEGER NOT NULL,
+aces		 	INTEGER,
+doubleFaults 		INTEGER,
+FstServiceIn		 INTEGER,
+FstServicePts 		INTEGER,
+SndServicePts 		INTEGER,
+netPtsWon		 INTEGER,
+breakPtsWon		 INTEGER,
+winners			 INTEGER,
+unForcedErrors		 INTEGER,
+fastestServe		 INTEGER,
+FstServiceAverage 	INTEGER,
+SndServiceAverage	 INTEGER,
+gamesWon  		INTEGER,
+PRIMARY KEY(sifMec, brojSet, sifIgrac),
+FOREIGN KEY(sifMec) REFERENCES mec(sifMec) ON DELETE CASCADE, 
+FOREIGN KEY(sifIgrac) REFERENCES igrac(sifIgrac) ON DELETE CASCADE)
+LOCK MODE ROW;

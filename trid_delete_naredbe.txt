@@ -1,0 +1,4 @@
+DELETE FROM igraci WHERE sifMec=10 AND sifIgrac=4;  
+DELETE FROM igraci WHERE sifMec=10 AND sifIgrac=8;
+DELETE FROM igraci WHERE sifMec=9 AND sifIgrac=4; 
+DELETE FROM igraci WHERE sifMec=9 AND sifIgrac=13;

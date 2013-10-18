@@ -1,0 +1,22 @@
+DROP TABLE igraci;
+DROP TABLE mec;
+DROP TABLE set_statistika;
+DROP TABLE igrac;
+DROP TABLE grad;
+DROP TABLE drzava;
+DROP TABLE podloga;
+DROP TABLE kolo;
+DROP TABLE tip;
+DROP TABLE bodovi_kolo;
+DROP TABLE teren;
+DROP TABLE turnir;
+DROP TABLE izdanje;
+DROP TABLE novac_kolo;
+
+DROP TRIGGER up_novac;
+DROP TRIGGER down_novac;
+DROP PROCEDURE smanji_zaradu;
+DROP PROCEDURE povecaj_zaradu;
+DROP PROCEDURE pros;
+DROP PROCEDURE izr_bodove;
+DROP PROCEDURE novac_igrac;
